@@ -1,16 +1,16 @@
 package db
 
 import (
-	"database/sql"
 	"log"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/rayhan889/lumbaumbah-backend/config"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-func NewPostgresStorage(cfg *config.Config) (*sql.DB, error) {
+func NewPostgresStorage(cfg *config.Config) (*gorm.DB, error) {
 	connString := cfg.FormatDSN()
-	db, err := sql.Open("pgx/v5", connString)
+	db, err := gorm.Open(postgres.Open(connString), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Unable to connect to database: ", err)
 	}
