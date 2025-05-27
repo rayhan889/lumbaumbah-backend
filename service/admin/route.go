@@ -1,4 +1,4 @@
-package user
+package admin
 
 import (
 	"encoding/json"
@@ -13,25 +13,20 @@ import (
 )
 
 type Handler struct {
-	store types.UserStore
+	store types.AdminStore
 }
 
-func NewHanlder(store types.UserStore) *Handler {
+func NewHanlder(store types.AdminStore) *Handler {
 	return &Handler{
 		store: store,
 	}
 }
 
 func (h *Handler) RegisterRoutes(r *gin.RouterGroup) {
-	r.POST("/users/signin", h.handleSignin)
-	r.POST("/users/signup", h.handleSignup)
+	// r.POST("/admins/signin", h.handleSignin)
+	r.POST("/admins/signup", h.handleSignup)
 }
 
-func (h *Handler) handleSignin(ctx *gin.Context) {
-	ctx.JSON(http.StatusOK, gin.H{
-        "message": "user signin...",
-    })
-}
 
 func (h *Handler) handleSignup(ctx *gin.Context) {
 	if ctx.Request.Method != http.MethodPost {
@@ -41,7 +36,7 @@ func (h *Handler) handleSignup(ctx *gin.Context) {
 		return
 	}
 
-	body := types.UserRegisterPayload{}
+	body := types.AdminRegisterPayload{}
 
 	data, err := ctx.GetRawData(); if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -66,7 +61,7 @@ func (h *Handler) handleSignup(ctx *gin.Context) {
 		return
 	}
 
-	user, _ := h.store.GetUserByEmail(body.Email);
+		user, _ := h.store.GetAdminByEmail(body.Email);
 
 	if user.ID != "" {
 		ctx.AbortWithStatusJSON(http.StatusConflict, gin.H{
@@ -82,17 +77,15 @@ func (h *Handler) handleSignup(ctx *gin.Context) {
 		return
 	}
 
-	err = h.store.CreateUser(types.User{
+	err = h.store.CreateAdmin(types.Admin{
 		ID: utils.GenerateUUID(),
 		Username:   body.Username,
-		FullName:  body.FullName,
 		Email:      body.Email,
 		Password:   hash,
-		PhoneNumber: body.PhoneNumber,
 		CreatedAt: time.Now().Format(time.RFC3339),
 	})
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"message": "User created successfully",
+		"message": "Admin registered successfully",
 	})
 }
