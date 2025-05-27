@@ -1,16 +1,15 @@
 package user
 
 import (
-	"database/sql"
-
 	"github.com/rayhan889/lumbaumbah-backend/types"
+	"gorm.io/gorm"
 )
 
 type Store struct {
-	db *sql.DB
+	db *gorm.DB
 }
 
-func NewStore(db *sql.DB) *Store {
+func NewStore(db *gorm.DB) *Store {
 	return &Store{
 		db: db,
 	}

@@ -26,7 +26,7 @@ func main() {
 
 	initDB(db)
 
-	server := api.NewAPIServer(":8080", nil)
+	server := api.NewAPIServer(":8080", db)
 	err = server.Run(); if err != nil {
 		panic(err)
 	}
