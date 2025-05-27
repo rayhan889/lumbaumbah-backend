@@ -40,7 +40,7 @@ func (h *Handler) handleSignup(ctx *gin.Context) {
 
 	data, err := ctx.GetRawData(); if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "User payload is not valid",
+			"message": "Admin payload is not valid",
 		})
 		return
 	}
@@ -61,9 +61,9 @@ func (h *Handler) handleSignup(ctx *gin.Context) {
 		return
 	}
 
-		user, _ := h.store.GetAdminByEmail(body.Email);
+	admin, _ := h.store.GetAdminByEmail(body.Email);
 
-	if user.ID != "" {
+	if admin.ID != "" {
 		ctx.AbortWithStatusJSON(http.StatusConflict, gin.H{
 			"message": "Email already used",
 		})
