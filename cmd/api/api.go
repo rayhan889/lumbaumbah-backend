@@ -1,18 +1,17 @@
 package api
 
 import (
-	"database/sql"
-
 	"github.com/gin-gonic/gin"
 	"github.com/rayhan889/lumbaumbah-backend/service/user"
+	"gorm.io/gorm"
 )
 
 type APIServer struct {
 	address string
-	db      *sql.DB
+	db      *gorm.DB
 }
 
-func NewAPIServer(address string, db *sql.DB) *APIServer {
+func NewAPIServer(address string, db *gorm.DB) *APIServer {
 	return &APIServer{
 		address: address,
 		db:      db,

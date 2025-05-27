@@ -18,8 +18,8 @@ func NewHanlder(store types.UserStore) *Handler {
 }
 
 func (h *Handler) RegisterRoutes(r *gin.RouterGroup) {
-	r.POST("/signin", h.handleSignin)
-	r.POST("/signup", h.handleSignup)
+	r.POST("/users/signin", h.handleSignin)
+	r.POST("/users/signup", h.handleSignup)
 }
 
 func (h *Handler) handleSignin(ctx *gin.Context) {
