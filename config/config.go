@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -15,8 +16,8 @@ type Config struct {
 	DBPort                 string
 	SSLMode                string
 	Port                   string
-	// JWTExpirationsInSecond int64
-	// JWTSecret              string
+	JWTExpirationsInSecond int64
+	JWTSecret              string
 }
 
 func (c *Config) FormatDSN() string {
@@ -40,12 +41,26 @@ func intitConfig() Config {
 		DBPort:    getEnv("DB_PORT", "5431"),
 		SSLMode: getEnv("DB_SSLMODE", "disable"),
 		Port: getEnv("PORT", "8080"),
+		JWTExpirationsInSecond: getEnvInt("JWT_EXPIRATIONS_IN_SECOND", 3600*24*7),
+		JWTSecret: getEnv("JWT_SECRET", "secret"),
 	}
 }
 
 func getEnv(key, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value
+	}
+
+	return fallback
+}
+
+func getEnvInt(key string, fallback int64) int64 {
+	if value, ok := os.LookupEnv(key); ok {
+		i, err :=strconv.ParseInt(value, 10, 64)
+		if err != nil {
+			return fallback
+		}
+		return i
 	}
 
 	return fallback
