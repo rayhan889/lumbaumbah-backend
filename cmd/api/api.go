@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/rayhan889/lumbaumbah-backend/service/admin"
 	"github.com/rayhan889/lumbaumbah-backend/service/user"
 	"gorm.io/gorm"
 )
@@ -26,6 +27,10 @@ func (s *APIServer) Run() error {
 	userStore := user.NewStore(s.db)
 	userService := user.NewHanlder(userStore)
 	userService.RegisterRoutes(v1)
+
+	adminStore := admin.NewStore(s.db)
+	adminService := admin.NewHanlder(adminStore)
+	adminService.RegisterRoutes(v1)
 
 	return r.Run(s.address)
 }
