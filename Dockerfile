@@ -12,4 +12,4 @@ RUN make build
 
 EXPOSE 8000
 
-CMD ["/build/lumbaumbah-backend"]
+CMD ["./bin/lumbaumbah-backend"]
