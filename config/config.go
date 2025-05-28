@@ -12,15 +12,16 @@ type Config struct {
 	User                   string
 	Password               string
 	DBName                 string
-	Port                   string
+	DBPort                 string
 	SSLMode                string
+	Port                   string
 	// JWTExpirationsInSecond int64
 	// JWTSecret              string
 }
 
 func (c *Config) FormatDSN() string {
 	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
-		c.User, c.Password, c.Host, c.Port, c.DBName, c.SSLMode)
+		c.User, c.Password, c.Host, c.DBPort, c.DBName, c.SSLMode)
 }
 
 var Envs = intitConfig()
@@ -36,8 +37,9 @@ func intitConfig() Config {
 		User:    getEnv("DB_USER", "postgres"),
 		Password: getEnv("DB_PASSWORD", "postgres"),
 		DBName:  getEnv("DB_NAME", "postgres"),
-		Port:    getEnv("DB_PORT", "5431"),
+		DBPort:    getEnv("DB_PORT", "5431"),
 		SSLMode: getEnv("DB_SSLMODE", "disable"),
+		Port: getEnv("PORT", "8080"),
 	}
 }
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/rayhan889/lumbaumbah-backend/cmd/api"
@@ -12,7 +13,7 @@ import (
 func main() {
 	dbConfig := config.Config{
 		Host:     config.Envs.Host,
-		Port:     config.Envs.Port,
+		DBPort:     config.Envs.DBPort,
 		User:     config.Envs.User,
 		Password: config.Envs.Password,
 		DBName:   config.Envs.DBName,
@@ -26,7 +27,8 @@ func main() {
 
 	initDB(db)
 
-	server := api.NewAPIServer(":8080", db)
+	port :=fmt.Sprintf(":%s", config.Envs.Port)
+	server := api.NewAPIServer(port, db)
 	err = server.Run(); if err != nil {
 		panic(err)
 	}

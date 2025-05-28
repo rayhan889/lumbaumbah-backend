@@ -8,8 +8,8 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o lumbaumbah-backend
+RUN make build
 
-EXPOSE 8080
+EXPOSE 8000
 
 CMD ["/build/lumbaumbah-backend"]

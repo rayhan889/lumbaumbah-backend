@@ -14,7 +14,7 @@ import (
 func main() {
 	dbConfig := config.Config{
 		Host:     config.Envs.Host,
-		Port:     config.Envs.Port,
+		DBPort:   config.Envs.DBPort,
 		User:     config.Envs.User,
 		Password: config.Envs.Password,
 		DBName:   config.Envs.DBName,
