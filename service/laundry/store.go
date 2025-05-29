@@ -27,6 +27,44 @@ func (s *Store) CreateLaundryType(laundryType types.LaundryType) error {
 	return nil
 }
 
+func (s *Store) GetLaundryRequestsByUseID(id string) ([]types.LaundryRequestResponse, error) {
+	var requests []types.LaundryRequestResponse
+
+	var tempRows []types.LaundryRequestResponse 
+	result := s.db.
+				Table("laundry_requests lr").
+				Select("lr.id, lr.weight, lt.name AS laundry_type, lr.notes, lr.status AS current_status, lr.completion_date").
+				Joins("LEFT JOIN laundry_types lt ON lr.laundry_type_id = lt.id").
+				Where("lr.user_id = ?", id).
+				Scan(&tempRows)
+	if result.Error != nil {
+		return requests, result.Error
+	}
+
+	for _, row := range tempRows {
+		var statusHistories []types.StatusHistoryResponse
+
+		result := s.db.
+					Table("status_histories sh").
+					Where("sh.laundry_request_id = ?", row.ID).
+					Scan(&statusHistories)
+		if result.Error != nil {
+			return requests, result.Error
+		}
+
+		requests = append(requests, types.LaundryRequestResponse{
+			ID: row.ID,
+			Weight: row.Weight,
+			Notes: row.Notes,
+			CurrentStatus: row.CurrentStatus,
+			CompletionDate: row.CompletionDate,
+			StatusHistories: statusHistories,
+		})
+	}
+
+	return requests, nil
+}
+
 func (s *Store) GetLaundryTypes() ([]types.LaundryType, error) {
 	var types []types.LaundryType
 	result := s.db.Find(&types)

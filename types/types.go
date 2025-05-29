@@ -38,6 +38,7 @@ type LaundryStore interface {
 	GetLaundryTypes() ([]LaundryType, error)
 	CreateLaundryRequest(laundryRequest LaundryRequest) error
 	GetLaundryTypeByID(id string) (LaundryType, error)
+	GetLaundryRequestsByUseID(id string) ([]LaundryRequestResponse, error)
 }
 
 type User struct {
@@ -131,6 +132,24 @@ type LaundryTypePayload struct {
 	Description   string `json:"description" validate:"required"`
 	Price         float64 `json:"price" validate:"required"`
 	EstimatedDays int `json:"estimated_days" validate:"required"`
+}
+
+type StatusHistoryResponse struct {
+	ID            string `json:"id"`
+	LaundryRequestID string `json:"laundry_request_id"`
+	Status        string `json:"status"`
+	UpdatedAt     string `json:"updated_at"`
+	UpdatedBy     string `json:"updated_by"`
+}
+
+type LaundryRequestResponse struct {
+	ID            string `json:"id"`
+	Weight        float64 `json:"weight"`
+	LaundryType   string `json:"laundry_type"`
+	Notes         string `json:"notes"`
+	CurrentStatus string `json:"current_status"`
+	CompletionDate string `json:"completion_date"`
+	StatusHistories []StatusHistoryResponse `json:"status_histories" gorm:"foreignKey:LaundryRequestID"`
 }
 
 type AdminRegisterPayload struct {

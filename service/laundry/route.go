@@ -28,8 +28,30 @@ func (h *Handler) RegisterRoutes(r *gin.RouterGroup) {
 	r.POST("/laundry/types/create", utils.RequireRole("admin"), h.hanldeCreateLaundryType)
 	r.GET("/laundry/types", h.handleGetLaundryTypes)
 	r.POST("/laundry/requests/create", utils.RequireRole("user"), h.handleCreateLaundryRequest)
+	r.GET("/laundry/requests", utils.RequireRole("user"), h.handleGetLaundryRequestsByUserID)
 }
 
+func (h *Handler) handleGetLaundryRequestsByUserID(ctx *gin.Context) {
+	if ctx.Request.Method != http.MethodGet {
+		ctx.AbortWithStatusJSON(http.StatusMethodNotAllowed, gin.H{
+			"message": "Method not allowed",
+		})
+		return
+	}
+
+	userId := ctx.GetString("user_id")
+	
+	requsts, err := h.store.GetLaundryRequestsByUseID(userId); if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to get laundry requests",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"requests": requsts,
+	})
+}
 
 func (h *Handler) handleGetLaundryTypes(ctx *gin.Context) {
 	if ctx.Request.Method != http.MethodGet {
