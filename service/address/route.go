@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rayhan889/lumbaumbah-backend/service/auth"
 	"github.com/rayhan889/lumbaumbah-backend/types"
+	"github.com/rayhan889/lumbaumbah-backend/utils"
 )
 
 type Handler struct {
@@ -19,7 +20,10 @@ func NewHanlder(store types.AddressStore) *Handler {
 }
 
 func (h *Handler) RegisterRoutes(r *gin.RouterGroup) {
-	r.Use(auth.Authenticate())
+	r.Use(
+		auth.Authenticate(),
+		utils.RequireRole("user"),
+	)
 	{
 		r.GET("/addresses", h.handleGetAddressByUserID)
 		r.POST("/addresses/create", h.handleCreateAddress)
@@ -27,7 +31,14 @@ func (h *Handler) RegisterRoutes(r *gin.RouterGroup) {
 }
 
 func (h *Handler) handleCreateAddress(ctx *gin.Context) {
-	userId := ctx.Query("user_id")
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Address created successfully",
+	})
+}
+
+func (h *Handler) handleGetAddressByUserID(ctx *gin.Context) {
+	userId := ctx.GetString("user_id")
+	role := ctx.GetString("role")
 
 	if userId == "" {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -38,12 +49,6 @@ func (h *Handler) handleCreateAddress(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"userId": userId,
-	})
-}
-
-func (h *Handler) handleGetAddressByUserID(ctx *gin.Context) {
-	userId := ctx.GetString("user_id")
-	ctx.JSON(http.StatusOK, gin.H{
-		"message": userId,
+		"role": role,
 	})
 }
