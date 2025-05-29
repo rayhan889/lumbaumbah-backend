@@ -2,6 +2,7 @@ package laundry
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"time"
 
@@ -26,11 +27,12 @@ func (h *Handler) RegisterRoutes(r *gin.RouterGroup) {
 	r.Use(auth.Authenticate())
 	r.POST("/laundry/types/create", utils.RequireRole("admin"), h.hanldeCreateLaundryType)
 	r.GET("/laundry/types", h.handleGetLaundryTypes)
+	r.POST("/laundry/requests/create", utils.RequireRole("user"), h.handleCreateLaundryRequest)
 }
 
 
 func (h *Handler) handleGetLaundryTypes(ctx *gin.Context) {
-	if ctx.Request.Method != http.MethodPost {
+	if ctx.Request.Method != http.MethodGet {
 		ctx.AbortWithStatusJSON(http.StatusMethodNotAllowed, gin.H{
 			"message": "Method not allowed",
 		})
@@ -100,5 +102,74 @@ func (h *Handler) hanldeCreateLaundryType(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "Laundry type created successfully",
+	})
+}
+
+func (h *Handler) handleCreateLaundryRequest(ctx *gin.Context) {
+	if ctx.Request.Method != http.MethodPost {
+		ctx.AbortWithStatusJSON(http.StatusMethodNotAllowed, gin.H{
+			"message": "Method not allowed",
+		})
+		return
+	}
+
+	body := types.LaundryRequestPayload{}
+	userId := ctx.GetString("user_id")
+
+	data, err := ctx.GetRawData(); if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Request type payload is not valid",
+		})
+		return
+	}
+
+	err = json.Unmarshal(data, &body); if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Bad request payload",
+		})
+		return
+	}
+
+	err = utils.Validate.Struct(body); if err != nil {
+		errors := err.(validator.ValidationErrors)
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Validation failed",
+			"errors": errors.Error(),
+		})
+		return
+	}
+
+	laundryType, err := h.store.GetLaundryTypeByID(body.LaundryTypeID); if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to get laundry type",
+		})
+		return
+	}
+
+	completionDate := calculateCompletionDate(laundryType.EstimatedDays)
+	var adminID *string = nil
+
+	log.Printf("completionDate: %s", completionDate)
+
+	err = h.store.CreateLaundryRequest(types.LaundryRequest{
+		ID: utils.GenerateUUID(),
+		UserID: userId,
+		AdminID: adminID,
+		LaundryTypeID: body.LaundryTypeID,
+		AddressID: body.AddressID,
+		Weight: body.Weight,
+		Notes: body.Notes,
+		Status: string(types.StatusPending),
+		CompletionDate: completionDate,
+	}); 
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to create laundry request",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Laundry request created successfully",
 	})
 }

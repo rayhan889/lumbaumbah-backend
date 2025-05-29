@@ -1,7 +1,10 @@
 package laundry
 
 import (
+	"time"
+
 	"github.com/rayhan889/lumbaumbah-backend/types"
+	"github.com/rayhan889/lumbaumbah-backend/utils"
 	"gorm.io/gorm"
 )
 
@@ -32,4 +35,47 @@ func (s *Store) GetLaundryTypes() ([]types.LaundryType, error) {
 	}
 
 	return types, nil
+}
+
+func (s *Store) CreateLaundryRequest(laundryRequest types.LaundryRequest) error {
+	tx := s.db.Begin()
+	defer func ()  {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	if err := tx.Error; err != nil {
+		return err
+	}
+
+	if err := tx.Create(&laundryRequest).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	requestId := laundryRequest.ID
+
+	statusHistory := types.StatusHistory{
+		ID: utils.GenerateUUID(),
+		LaundryRequestID: requestId,
+		Status: string(types.StatusPending),
+		UpdatedAt: time.Now().Format(time.RFC3339),
+		UpdatedBy: laundryRequest.UserID,
+	}
+	if err := tx.Create(&statusHistory).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
+}
+
+func (s *Store) GetLaundryTypeByID(id string) (types.LaundryType, error) {
+	var laundryType types.LaundryType
+	result := s.db.Where("id = ?", id).First(&laundryType)
+	if result.Error != nil {
+		return laundryType, result.Error
+	}
+
+	return laundryType, nil
 }
