@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -68,6 +69,8 @@ func VerifyToken(tokenString string) (claims *types.JWTClaims, msg string) {
 func RequireRole(allowedRoles ...string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		role := ctx.GetString("role")
+		log.Printf("Role: %s", role)
+		log.Printf("Allowed roles: %s", allowedRoles)
 		if role == "" {
 			ctx.AbortWithStatusJSON(401, gin.H{
 				"message": "Missing role",

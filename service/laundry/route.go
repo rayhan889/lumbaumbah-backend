@@ -1,4 +1,4 @@
-package address
+package laundry
 
 import (
 	"encoding/json"
@@ -13,10 +13,10 @@ import (
 )
 
 type Handler struct {
-	store types.AddressStore
+	store types.LaundryStore
 }
 
-func NewHanlder(store types.AddressStore) *Handler {
+func NewHanlder(store types.LaundryStore) *Handler {
 	return &Handler{
 		store: store,
 	}
@@ -24,11 +24,12 @@ func NewHanlder(store types.AddressStore) *Handler {
 
 func (h *Handler) RegisterRoutes(r *gin.RouterGroup) {
 	r.Use(auth.Authenticate())
-	r.GET("/addresses", utils.RequireRole("user"), h.handleGetAddressByUserID)
-	r.POST("/addresses/create", utils.RequireRole("user"), h.handleCreateAddress)
+	r.POST("/laundry/types/create", utils.RequireRole("admin"), h.hanldeCreateLaundryType)
+	r.GET("/laundry/types", h.handleGetLaundryTypes)
 }
 
-func (h *Handler) handleCreateAddress(ctx *gin.Context) {
+
+func (h *Handler) handleGetLaundryTypes(ctx *gin.Context) {
 	if ctx.Request.Method != http.MethodPost {
 		ctx.AbortWithStatusJSON(http.StatusMethodNotAllowed, gin.H{
 			"message": "Method not allowed",
@@ -36,11 +37,31 @@ func (h *Handler) handleCreateAddress(ctx *gin.Context) {
 		return
 	}
 
-	body := types.UserAddressPayload{}
+	types, err := h.store.GetLaundryTypes(); if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to get laundry types",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"types": types,
+	})
+}
+
+func (h *Handler) hanldeCreateLaundryType(ctx *gin.Context) {
+	if ctx.Request.Method != http.MethodPost {
+		ctx.AbortWithStatusJSON(http.StatusMethodNotAllowed, gin.H{
+			"message": "Method not allowed",
+		})
+		return
+	}
+
+	body := types.LaundryTypePayload{}
 
 	data, err := ctx.GetRawData(); if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "Address payload is not valid",
+			"message": "Laundry type payload is not valid",
 		})
 		return
 	}
@@ -61,47 +82,23 @@ func (h *Handler) handleCreateAddress(ctx *gin.Context) {
 		return
 	}
 
-	userId := ctx.GetString("user_id")
-
-	err = h.store.CreateAddress(types.Address{
+	err = h.store.CreateLaundryType(types.LaundryType{
 		ID: utils.GenerateUUID(),
-		UserID: userId,
-		StreetAddress: body.StreedAddress,
-		City: body.City,
-		State: body.State,
-		IsDefault: false,
+		Name: body.Name,
+		Description: body.Description,
+		Price: body.Price,
+		EstimatedDays: body.EstimatedDays,
+		IsActive: true,
 		CreatedAt: time.Now().Format(time.RFC3339),
 	})
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"message": "Failed to create address",
+			"message": "Failed to create laundry type",
 		})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"message": "Address created successfully",
-	})
-}
-
-func (h *Handler) handleGetAddressByUserID(ctx *gin.Context) {
-	if ctx.Request.Method != http.MethodGet {
-		ctx.AbortWithStatusJSON(http.StatusMethodNotAllowed, gin.H{
-			"message": "Method not allowed",
-		})
-		return
-	}
-
-	userId := ctx.GetString("user_id")
-
-	addresses, err := h.store.GetAddressesByUserID(userId); if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"message": "Failed to get addresses",
-		})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"addresses": addresses,
+		"message": "Laundry type created successfully",
 	})
 }

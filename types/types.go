@@ -21,7 +21,12 @@ type AdminStore interface {
 
 type AddressStore interface {
 	CreateAddress(address Address) error
-	GetAddressByUserID(id string) (Address, error)
+	GetAddressesByUserID(id string) ([]Address, error)
+}
+
+type LaundryStore interface {
+	CreateLaundryType(laundryType LaundryType) error
+	GetLaundryTypes() ([]LaundryType, error)
 }
 
 type User struct {
@@ -52,6 +57,16 @@ type Address struct {
 	CreatedAt     string `json:"created_at"`
 }
 
+type LaundryType struct {
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	Description   string `json:"description"`
+	Price         float64 `json:"price"`
+	EstimatedDays int `json:"estimated_days"`
+	IsActive      bool `json:"is_active"`
+	CreatedAt     string `json:"created_at"`
+}
+
 type UserRegisterPayload struct {
 	Username    string `json:"username" validate:"required"`
 	FullName    string `json:"full_name" validate:"required"`
@@ -64,7 +79,13 @@ type UserAddressPayload struct {
 	StreedAddress string `json:"street_address" validate:"required"`
 	City          string `json:"city" validate:"required"`
 	State         string `json:"state" validate:"required"`
-	IsDefault     bool   `json:"is_default" validate:"required"`
+}
+
+type LaundryTypePayload struct {
+	Name          string `json:"name" validate:"required"`
+	Description   string `json:"description" validate:"required"`
+	Price         float64 `json:"price" validate:"required"`
+	EstimatedDays int `json:"estimated_days" validate:"required"`
 }
 
 type AdminRegisterPayload struct {
