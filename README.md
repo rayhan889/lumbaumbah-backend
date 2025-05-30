@@ -35,7 +35,3 @@ With this pattern...
 - I can easily mock a repo or service when testing a layer above it and of course it makes easier to write unit tests.
 - Each layer has a clear job, such as handling requests, processing data, or interacting with the database.
 - This pattern also widely used in the industry, such as the microservices architecture.
-
----
-
-> Feel free to clone, fork, and contribute to this project! 💡
