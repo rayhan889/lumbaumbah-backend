@@ -14,6 +14,7 @@ const (
 type UserStore interface {
 	CreateUser(user User) error
 	GetUserByEmail(email string) (User, error)
+	GetUserByID(id string) (User, error)
 }
 
 type JWTClaims struct {
@@ -36,8 +37,11 @@ type AddressStore interface {
 type LaundryStore interface {
 	CreateLaundryType(laundryType LaundryType) error
 	GetLaundryTypes() ([]LaundryType, error)
+	GetLaundryRequestByID(id string) (LaundryRequest, error)
 	CreateLaundryRequest(laundryRequest LaundryRequest) error
 	GetLaundryTypeByID(id string) (LaundryType, error)
+	GetLaundryRequestsByUserID(id string) ([]LaundryRequestResponse, error)
+	UpdateLaundryRequestStatus(status string, rId string, uId string) error
 }
 
 type User struct {
@@ -120,6 +124,10 @@ type UserRegisterPayload struct {
 	PhoneNumber string `json:"phone_number" validate:"required"`
 }
 
+type UpdateLaundryRequestPayload struct {
+	Status string `json:"status" validate:"required,oneof=pending canceled completed processed"`
+}
+
 type UserAddressPayload struct {
 	StreedAddress string `json:"street_address" validate:"required"`
 	City          string `json:"city" validate:"required"`
@@ -131,6 +139,25 @@ type LaundryTypePayload struct {
 	Description   string `json:"description" validate:"required"`
 	Price         float64 `json:"price" validate:"required"`
 	EstimatedDays int `json:"estimated_days" validate:"required"`
+}
+
+type StatusHistoryResponse struct {
+	ID            string `json:"id"`
+	LaundryRequestID string `json:"laundry_request_id"`
+	Status        string `json:"status"`
+	UpdatedAt     string `json:"updated_at"`
+	UpdatedBy     string `json:"updated_by"`
+}
+
+type LaundryRequestResponse struct {
+	ID            string `json:"id"`
+	Weight        float64 `json:"weight"`
+	LaundryType   string `json:"laundry_type"`
+	Notes         string `json:"notes"`
+	CurrentStatus string `json:"current_status"`
+	CompletionDate string `json:"completion_date"`
+	TotalPrice    float64 `json:"total_price"`
+	StatusHistories []StatusHistoryResponse `json:"status_histories" gorm:"foreignKey:LaundryRequestID"`
 }
 
 type AdminRegisterPayload struct {

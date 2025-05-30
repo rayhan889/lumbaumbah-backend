@@ -38,7 +38,7 @@ func (h *Handler) handleSignin(ctx *gin.Context) {
 
 	body := types.SigninPayload{}
 
-	data, err := ctx.GetRawData(); if err != nil {
+	data, err := ctx.GetRawData(); if err != nil || len(data) == 0 {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "User payload is not valid",
 		})
@@ -61,7 +61,14 @@ func (h *Handler) handleSignin(ctx *gin.Context) {
 		return
 	}
 
-	user, err :=h.store.GetUserByEmail(body.Email); if err != nil {
+	user, err := h.store.GetUserByEmail(body.Email); if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{
+			"message": "Failed to get user",
+		})
+		return
+	}
+
+	if user.ID == "" {
 		ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 			"message": "User not found",
 		})
