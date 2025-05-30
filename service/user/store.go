@@ -33,3 +33,13 @@ func (s *Store) GetUserByEmail(email string) (types.User, error) {
 
 	return user, nil
 }
+
+func (s *Store) GetUserByID(id string) (types.User, error) {
+	var user types.User
+	result := s.db.Where("id = ?", id).First(&user)
+	if result.Error != nil {
+		return user, result.Error
+	}
+
+	return user, nil
+}

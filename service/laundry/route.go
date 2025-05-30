@@ -29,6 +29,7 @@ func (h *Handler) RegisterRoutes(r *gin.RouterGroup) {
 	r.GET("/laundry/types", h.handleGetLaundryTypes)
 	r.POST("/laundry/requests/create", utils.RequireRole("user"), h.handleCreateLaundryRequest)
 	r.GET("/laundry/requests", utils.RequireRole("user"), h.handleGetLaundryRequestsByUserID)
+	r.PUT("/laundry/requests/:id", h.handleUpdateLaundryRequest)
 }
 
 func (h *Handler) handleGetLaundryRequestsByUserID(ctx *gin.Context) {
@@ -41,7 +42,7 @@ func (h *Handler) handleGetLaundryRequestsByUserID(ctx *gin.Context) {
 
 	userId := ctx.GetString("user_id")
 	
-	requsts, err := h.store.GetLaundryRequestsByUseID(userId); if err != nil {
+	requsts, err := h.store.GetLaundryRequestsByUserID(userId); if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": "Failed to get laundry requests",
 		})
@@ -50,6 +51,77 @@ func (h *Handler) handleGetLaundryRequestsByUserID(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"requests": requsts,
+	})
+}
+
+func (h *Handler) handleUpdateLaundryRequest(ctx *gin.Context) {
+	if ctx.Request.Method != http.MethodPut {
+		ctx.AbortWithStatusJSON(http.StatusMethodNotAllowed, gin.H{
+			"message": "Method not allowed",
+		})
+		return
+	}
+
+	body := types.UpdateLaundryRequestPayload{}
+
+	data, err := ctx.GetRawData(); if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Laundry request payload is not valid",
+		})
+		return
+	}
+
+	err = json.Unmarshal(data, &body); if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Bad request payload",
+		})
+		return
+	}
+
+	err = utils.Validate.Struct(body); if err != nil {
+		errors := err.(validator.ValidationErrors)
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Validation failed",
+			"errors": errors.Error(),
+		})
+		return
+	}
+
+	rId := ctx.Param("id")
+	if rId == "" {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Laundry request id is required",
+		})
+		return
+	}
+
+	lr, err := h.store.GetLaundryRequestByID(rId); if err != nil {
+		ctx.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+
+	updId := ctx.GetString("user_id")
+	role := ctx.GetString("role")
+
+	if !checkUpdaterAccess(role, body.Status) {
+		ctx.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+	if !checkUpdateAbility(lr.Status, body.Status) {
+		ctx.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+	err = h.store.UpdateLaundryRequestStatus(body.Status, rId, updId); if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to update laundry request",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Laundry request updated successfully",
 	})
 }
 
