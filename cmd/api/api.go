@@ -1,6 +1,9 @@
 package api
 
 import (
+	"time"
+
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/rayhan889/lumbaumbah-backend/service/address"
 	"github.com/rayhan889/lumbaumbah-backend/service/admin"
@@ -23,6 +26,15 @@ func NewAPIServer(address string, db *gorm.DB) *APIServer {
 
 func (s *APIServer) Run() error {
 	r := gin.Default()
+
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	v1 := r.Group("/api/v1")
 
