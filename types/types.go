@@ -56,6 +56,10 @@ type InvoiceStore interface {
 	GetInvoiceByID(id string) (Invoice, error)
 }
 
+type NotificationStore interface {
+	CreateNotification(notification Notification) error
+}
+
 type User struct {
 	ID          string `json:"id"`
 	Username    string `json:"username"`
@@ -124,6 +128,16 @@ type LaundryType struct {
 	EstimatedDays int     `json:"estimated_days"`
 	IsActive      bool    `json:"is_active"`
 	CreatedAt     string  `json:"created_at"`
+}
+
+type Notification struct {
+	ID               string  `json:"id"`
+	UserID           *string `json:"user_id"`
+	AdminID          *string `json:"admin_id"`
+	LaundryRequestID *string `json:"laundry_request_id"`
+	Message          string  `json:"message"`
+	IsRead           bool    `json:"is_read"`
+	CreatedAt        string  `json:"created_at"`
 }
 
 type LaundryRequestPayload struct {

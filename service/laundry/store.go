@@ -1,9 +1,10 @@
 package laundry
 
 import (
-	"fmt"
 	"time"
 
+	"github.com/rayhan889/lumbaumbah-backend/domain"
+	"github.com/rayhan889/lumbaumbah-backend/domain/events"
 	"github.com/rayhan889/lumbaumbah-backend/types"
 	"github.com/rayhan889/lumbaumbah-backend/utils"
 	"gorm.io/gorm"
@@ -53,8 +54,6 @@ func (s *Store) GetLaundryRequests() ([]types.LaundryRequestResponse, error) {
 		return requests, result.Error
 	}
 
-	fmt.Printf("Query result: %+v\n", tempRows)
-
 	for _, row := range tempRows {
 		var statusHistories []types.StatusHistoryResponse
 
@@ -95,8 +94,6 @@ func (s *Store) GetLaundryRequestsByUserID(id string) ([]types.LaundryRequestRes
 	if result.Error != nil {
 		return requests, result.Error
 	}
-
-	fmt.Printf("Query result: %+v\n", tempRows)
 
 	for _, row := range tempRows {
 		var statusHistories []types.StatusHistoryResponse
@@ -225,7 +222,7 @@ func (s *Store) UpdateLaundryRequestStatus(status string, rId string, uId string
 		inv := types.Invoice{
 			ID:               utils.GenerateUUID(),
 			UserID:           returnedLaundryType.UserID,
-			AdminID:          nil,
+			AdminID:          &uId,
 			Amount:           totalPrice,
 			PaymentMethod:    string(types.PaymentMethodBankTransfer),
 			Status:           string(types.StatusPending),
@@ -244,5 +241,18 @@ func (s *Store) UpdateLaundryRequestStatus(status string, rId string, uId string
 		return err
 	}
 
-	return tx.Commit().Error
+	err := tx.Commit().Error
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	domain.Emit(events.LaundryRequestStatusUpdated{
+		RequestID: rId,
+		UserID:    returnedLaundryType.UserID,
+		AdminID:   uId,
+		Status:    status,
+	})
+
+	return nil
 }
