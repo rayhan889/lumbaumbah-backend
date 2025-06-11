@@ -3,12 +3,19 @@ package types
 import "github.com/golang-jwt/jwt/v5"
 
 type Status string
+type PaymentMethod string
 
 const (
 	StatusPending   Status = "pending"
 	StatusCanceled  Status = "canceled"
 	StatusCompleted Status = "completed"
 	StatusProcessed Status = "processed"
+)
+
+const (
+	PaymentMethodCreditCard   PaymentMethod = "credit_card"
+	PaymentMethodBankTransfer PaymentMethod = "bank_transfer"
+	PaymentMethodCash         PaymentMethod = "cash"
 )
 
 type UserStore interface {
@@ -45,6 +52,10 @@ type LaundryStore interface {
 	UpdateLaundryRequestStatus(status string, rId string, uId string) error
 }
 
+type InvoiceStore interface {
+	GetInvoiceByID(id string) (Invoice, error)
+}
+
 type User struct {
 	ID          string `json:"id"`
 	Username    string `json:"username"`
@@ -53,6 +64,18 @@ type User struct {
 	Password    string `json:"password"`
 	PhoneNumber string `json:"phone_number"`
 	CreatedAt   string `json:"created_at"`
+}
+
+type Invoice struct {
+	ID               string  `json:"id"`
+	UserID           string  `json:"user_id"`
+	AdminID          *string `json:"admin_id"`
+	Amount           float64 `json:"amount"`
+	PaymentMethod    string  `json:"payment_method"`
+	Status           string  `json:"status"`
+	IssuedAt         string  `json:"issued_at"`
+	PaidAt           *string `json:"paid_at"`
+	LaundryRequestID string  `json:"laundry_request_id"`
 }
 
 type Admin struct {
@@ -124,6 +147,15 @@ type UserRegisterPayload struct {
 	Password    string `json:"password" validate:"required"`
 	PhoneNumber string `json:"phone_number" validate:"required"`
 }
+
+// type InvoicePayload struct {
+// 	LaundryRequestID string  `json:"laundry_request_id" validate:"required"`
+// 	Amount           float64 `json:"amount" validate:"required,gt=0,number"`
+// 	PaymentMethod	string  `json:"payment_method" validate:"required,oneof=credit_card bank_transfer cash"`
+// 	IssuedAt		 string  `json:"issued_at" validate:"required"`
+// 	PaidAt          *string `json:"paid_at" validate:"omitempty"`
+
+// }
 
 type UpdateLaundryRequestPayload struct {
 	Status string `json:"status" validate:"required,oneof=pending canceled completed processed"`

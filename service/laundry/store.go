@@ -7,6 +7,7 @@ import (
 	"github.com/rayhan889/lumbaumbah-backend/types"
 	"github.com/rayhan889/lumbaumbah-backend/utils"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type Store struct {
@@ -188,7 +189,17 @@ func (s *Store) UpdateLaundryRequestStatus(status string, rId string, uId string
 		return err
 	}
 
-	if err := tx.Model(&types.LaundryRequest{}).Where("id = ?", rId).Update("status", status).Error; err != nil {
+	var returnedLaundryType struct {
+		LaundryTypeID string  `gorm:"column:laundry_type_id"`
+		Weight        float64 `gorm:"column:weight"`
+		UserID        string  `gorm:"column:user_id"`
+	}
+
+	if err := tx.Model(&types.LaundryRequest{}).
+		Clauses(clause.Returning{Columns: []clause.Column{{Name: "laundry_type_id"}, {Name: "weight"}, {Name: "user_id"}}}).
+		Where("id = ?", rId).
+		Update("status", status).
+		Scan(&returnedLaundryType).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -199,6 +210,33 @@ func (s *Store) UpdateLaundryRequestStatus(status string, rId string, uId string
 		Status:           status,
 		UpdatedAt:        time.Now().Format(time.RFC3339),
 		UpdatedBy:        uId,
+	}
+
+	if status == string(types.StatusCompleted) && returnedLaundryType.LaundryTypeID != "" {
+		var price float64
+		ltId := returnedLaundryType.LaundryTypeID
+		err := tx.Model(&types.LaundryType{}).Select("price").Where("id = ?", ltId).Pluck("price", &price).Error
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		totalPrice := price * returnedLaundryType.Weight
+		inv := types.Invoice{
+			ID:               utils.GenerateUUID(),
+			UserID:           returnedLaundryType.UserID,
+			AdminID:          nil,
+			Amount:           totalPrice,
+			PaymentMethod:    string(types.PaymentMethodBankTransfer),
+			Status:           string(types.StatusPending),
+			IssuedAt:         time.Now().Format(time.RFC3339),
+			LaundryRequestID: rId,
+		}
+
+		if err := tx.Create(&inv).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
 
 	if err := tx.Create(&sh).Error; err != nil {

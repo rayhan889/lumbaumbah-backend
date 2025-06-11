@@ -18,3 +18,7 @@ CREATE TABLE IF NOT EXISTS invoices (
     CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id),
     CONSTRAINT fk_admin FOREIGN KEY (admin_id) REFERENCES admins(id)
 );
+
+ALTER TABLE invoices
+    ADD laundry_request_id varchar(36) NOT NULL,
+    ADD CONSTRAINT fk_laundry_request FOREIGN KEY (laundry_request_id) REFERENCES laundry_requests(id);
