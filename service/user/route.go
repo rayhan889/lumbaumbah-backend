@@ -91,7 +91,8 @@ func (h *Handler) handleSignin(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-        "token": token,
+		"user": user,
+		"token": token,
     })
 }
 

@@ -29,7 +29,29 @@ func (h *Handler) RegisterRoutes(r *gin.RouterGroup) {
 	r.GET("/laundry/types", h.handleGetLaundryTypes)
 	r.POST("/laundry/requests/create", utils.RequireRole("user"), h.handleCreateLaundryRequest)
 	r.GET("/laundry/requests", utils.RequireRole("user"), h.handleGetLaundryRequestsByUserID)
+	r.GET("/laundry/requests/lists", utils.RequireRole("admin"), h.handleGetLaundryRequests)
 	r.PUT("/laundry/requests/:id", h.handleUpdateLaundryRequest)
+}
+
+func (h *Handler) handleGetLaundryRequests(ctx *gin.Context) {
+	if ctx.Request.Method != http.MethodGet {
+		ctx.AbortWithStatusJSON(http.StatusMethodNotAllowed, gin.H{
+			"message": "Method not allowed",
+		})
+		return
+	}
+
+	requests, err := h.store.GetLaundryRequests()
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to get laundry requests",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"requests": requests,
+	})
 }
 
 func (h *Handler) handleGetLaundryRequestsByUserID(ctx *gin.Context) {
@@ -41,8 +63,9 @@ func (h *Handler) handleGetLaundryRequestsByUserID(ctx *gin.Context) {
 	}
 
 	userId := ctx.GetString("user_id")
-	
-	requsts, err := h.store.GetLaundryRequestsByUserID(userId); if err != nil {
+
+	requests, err := h.store.GetLaundryRequestsByUserID(userId)
+	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": "Failed to get laundry requests",
 		})
@@ -50,7 +73,7 @@ func (h *Handler) handleGetLaundryRequestsByUserID(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"requests": requsts,
+		"requests": requests,
 	})
 }
 
@@ -64,25 +87,28 @@ func (h *Handler) handleUpdateLaundryRequest(ctx *gin.Context) {
 
 	body := types.UpdateLaundryRequestPayload{}
 
-	data, err := ctx.GetRawData(); if err != nil {
+	data, err := ctx.GetRawData()
+	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "Laundry request payload is not valid",
 		})
 		return
 	}
 
-	err = json.Unmarshal(data, &body); if err != nil {
+	err = json.Unmarshal(data, &body)
+	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "Bad request payload",
 		})
 		return
 	}
 
-	err = utils.Validate.Struct(body); if err != nil {
+	err = utils.Validate.Struct(body)
+	if err != nil {
 		errors := err.(validator.ValidationErrors)
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "Validation failed",
-			"errors": errors.Error(),
+			"errors":  errors.Error(),
 		})
 		return
 	}
@@ -95,7 +121,8 @@ func (h *Handler) handleUpdateLaundryRequest(ctx *gin.Context) {
 		return
 	}
 
-	lr, err := h.store.GetLaundryRequestByID(rId); if err != nil {
+	lr, err := h.store.GetLaundryRequestByID(rId)
+	if err != nil {
 		ctx.AbortWithStatus(http.StatusNotFound)
 		return
 	}
@@ -113,7 +140,8 @@ func (h *Handler) handleUpdateLaundryRequest(ctx *gin.Context) {
 		return
 	}
 
-	err = h.store.UpdateLaundryRequestStatus(body.Status, rId, updId); if err != nil {
+	err = h.store.UpdateLaundryRequestStatus(body.Status, rId, updId)
+	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": "Failed to update laundry request",
 		})
@@ -133,7 +161,8 @@ func (h *Handler) handleGetLaundryTypes(ctx *gin.Context) {
 		return
 	}
 
-	types, err := h.store.GetLaundryTypes(); if err != nil {
+	types, err := h.store.GetLaundryTypes()
+	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": "Failed to get laundry types",
 		})
@@ -155,37 +184,40 @@ func (h *Handler) hanldeCreateLaundryType(ctx *gin.Context) {
 
 	body := types.LaundryTypePayload{}
 
-	data, err := ctx.GetRawData(); if err != nil {
+	data, err := ctx.GetRawData()
+	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "Laundry type payload is not valid",
 		})
 		return
 	}
 
-	err = json.Unmarshal(data, &body); if err != nil {
+	err = json.Unmarshal(data, &body)
+	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "Bad request payload",
 		})
 		return
 	}
 
-	err = utils.Validate.Struct(body); if err != nil {
+	err = utils.Validate.Struct(body)
+	if err != nil {
 		errors := err.(validator.ValidationErrors)
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "Validation failed",
-			"errors": errors.Error(),
+			"errors":  errors.Error(),
 		})
 		return
 	}
 
 	err = h.store.CreateLaundryType(types.LaundryType{
-		ID: utils.GenerateUUID(),
-		Name: body.Name,
-		Description: body.Description,
-		Price: body.Price,
+		ID:            utils.GenerateUUID(),
+		Name:          body.Name,
+		Description:   body.Description,
+		Price:         body.Price,
 		EstimatedDays: body.EstimatedDays,
-		IsActive: true,
-		CreatedAt: time.Now().Format(time.RFC3339),
+		IsActive:      true,
+		CreatedAt:     time.Now().Format(time.RFC3339),
 	})
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -210,30 +242,34 @@ func (h *Handler) handleCreateLaundryRequest(ctx *gin.Context) {
 	body := types.LaundryRequestPayload{}
 	userId := ctx.GetString("user_id")
 
-	data, err := ctx.GetRawData(); if err != nil {
+	data, err := ctx.GetRawData()
+	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "Request type payload is not valid",
 		})
 		return
 	}
 
-	err = json.Unmarshal(data, &body); if err != nil {
+	err = json.Unmarshal(data, &body)
+	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "Bad request payload",
 		})
 		return
 	}
 
-	err = utils.Validate.Struct(body); if err != nil {
+	err = utils.Validate.Struct(body)
+	if err != nil {
 		errors := err.(validator.ValidationErrors)
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "Validation failed",
-			"errors": errors.Error(),
+			"errors":  errors.Error(),
 		})
 		return
 	}
 
-	laundryType, err := h.store.GetLaundryTypeByID(body.LaundryTypeID); if err != nil {
+	laundryType, err := h.store.GetLaundryTypeByID(body.LaundryTypeID)
+	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": "Failed to get laundry type",
 		})
@@ -246,16 +282,16 @@ func (h *Handler) handleCreateLaundryRequest(ctx *gin.Context) {
 	log.Printf("completionDate: %s", completionDate)
 
 	err = h.store.CreateLaundryRequest(types.LaundryRequest{
-		ID: utils.GenerateUUID(),
-		UserID: userId,
-		AdminID: adminID,
-		LaundryTypeID: body.LaundryTypeID,
-		AddressID: body.AddressID,
-		Weight: body.Weight,
-		Notes: body.Notes,
-		Status: string(types.StatusPending),
+		ID:             utils.GenerateUUID(),
+		UserID:         userId,
+		AdminID:        adminID,
+		LaundryTypeID:  body.LaundryTypeID,
+		AddressID:      body.AddressID,
+		Weight:         body.Weight,
+		Notes:          body.Notes,
+		Status:         string(types.StatusPending),
 		CompletionDate: completionDate,
-	}); 
+	})
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": "Failed to create laundry request",

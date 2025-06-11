@@ -3,12 +3,19 @@ package types
 import "github.com/golang-jwt/jwt/v5"
 
 type Status string
+type PaymentMethod string
 
 const (
-	StatusPending Status = "pending"
-	StatusCanceled Status = "canceled"
+	StatusPending   Status = "pending"
+	StatusCanceled  Status = "canceled"
 	StatusCompleted Status = "completed"
 	StatusProcessed Status = "processed"
+)
+
+const (
+	PaymentMethodCreditCard   PaymentMethod = "credit_card"
+	PaymentMethodBankTransfer PaymentMethod = "bank_transfer"
+	PaymentMethodCash         PaymentMethod = "cash"
 )
 
 type UserStore interface {
@@ -41,7 +48,16 @@ type LaundryStore interface {
 	CreateLaundryRequest(laundryRequest LaundryRequest) error
 	GetLaundryTypeByID(id string) (LaundryType, error)
 	GetLaundryRequestsByUserID(id string) ([]LaundryRequestResponse, error)
+	GetLaundryRequests() ([]LaundryRequestResponse, error)
 	UpdateLaundryRequestStatus(status string, rId string, uId string) error
+}
+
+type InvoiceStore interface {
+	GetInvoiceByID(id string) (Invoice, error)
+}
+
+type NotificationStore interface {
+	CreateNotification(notification Notification) error
 }
 
 type User struct {
@@ -52,6 +68,18 @@ type User struct {
 	Password    string `json:"password"`
 	PhoneNumber string `json:"phone_number"`
 	CreatedAt   string `json:"created_at"`
+}
+
+type Invoice struct {
+	ID               string  `json:"id"`
+	UserID           string  `json:"user_id"`
+	AdminID          *string `json:"admin_id"`
+	Amount           float64 `json:"amount"`
+	PaymentMethod    string  `json:"payment_method"`
+	Status           string  `json:"status"`
+	IssuedAt         string  `json:"issued_at"`
+	PaidAt           *string `json:"paid_at"`
+	LaundryRequestID string  `json:"laundry_request_id"`
 }
 
 type Admin struct {
@@ -73,47 +101,57 @@ type Address struct {
 }
 
 type LaundryRequest struct {
-	ID            string `json:"id"`
-	UserID        string `json:"user_id"`
-	AdminID       *string `json:"admin_id"`
-	LaundryTypeID string `json:"laundry_type_id"`
-	AddressID     string `json:"address_id"`
-	Weight        float64 `json:"weight"`
-	Notes         string `json:"notes"`
-	Status        string `json:"status"`
-	CompletionDate string `json:"completion_date"`
+	ID             string  `json:"id"`
+	UserID         string  `json:"user_id"`
+	AdminID        *string `json:"admin_id"`
+	LaundryTypeID  string  `json:"laundry_type_id"`
+	AddressID      string  `json:"address_id"`
+	Weight         float64 `json:"weight"`
+	Notes          string  `json:"notes"`
+	Status         string  `json:"status"`
+	CompletionDate string  `json:"completion_date"`
 }
 
 type StatusHistory struct {
-	ID            string `json:"id"`
+	ID               string `json:"id"`
 	LaundryRequestID string `json:"laundry_request_id"`
-	Status        string `json:"status"`
-	UpdatedAt     string `json:"updated_at"`
-	UpdatedBy     string `json:"updated_by"`
+	Status           string `json:"status"`
+	UpdatedAt        string `json:"updated_at"`
+	UpdatedBy        string `json:"updated_by"`
 }
 
 type LaundryType struct {
-	ID            string `json:"id"`
-	Name          string `json:"name"`
-	Description   string `json:"description"`
+	ID            string  `json:"id"`
+	Name          string  `json:"name"`
+	Description   string  `json:"description"`
 	Price         float64 `json:"price"`
-	EstimatedDays int `json:"estimated_days"`
-	IsActive      bool `json:"is_active"`
-	CreatedAt     string `json:"created_at"`
+	EstimatedDays int     `json:"estimated_days"`
+	IsActive      bool    `json:"is_active"`
+	CreatedAt     string  `json:"created_at"`
+}
+
+type Notification struct {
+	ID               string  `json:"id"`
+	UserID           *string `json:"user_id"`
+	AdminID          *string `json:"admin_id"`
+	LaundryRequestID *string `json:"laundry_request_id"`
+	Message          string  `json:"message"`
+	IsRead           bool    `json:"is_read"`
+	CreatedAt        string  `json:"created_at"`
 }
 
 type LaundryRequestPayload struct {
-	LaundryTypeID string `json:"laundry_type_id" validate:"required"`
-	AddressID     string `json:"address_id" validate:"required"`
+	LaundryTypeID string  `json:"laundry_type_id" validate:"required"`
+	AddressID     string  `json:"address_id" validate:"required"`
 	Weight        float64 `json:"weight" validate:"required"`
-	Notes         string `json:"notes"`
+	Notes         string  `json:"notes"`
 }
 
 type StatusHistoryPayload struct {
 	LaundryRequestID string `json:"laundry_request_id" validate:"required"`
-	Status        string `json:"status" validate:"required"`
-	UpdatedBy     string `json:"updated_by" validate:"required"`
-	UpdatedAt     string `json:"updated_at" validate:"required"`
+	Status           string `json:"status" validate:"required"`
+	UpdatedBy        string `json:"updated_by" validate:"required"`
+	UpdatedAt        string `json:"updated_at" validate:"required"`
 }
 
 type UserRegisterPayload struct {
@@ -123,6 +161,15 @@ type UserRegisterPayload struct {
 	Password    string `json:"password" validate:"required"`
 	PhoneNumber string `json:"phone_number" validate:"required"`
 }
+
+// type InvoicePayload struct {
+// 	LaundryRequestID string  `json:"laundry_request_id" validate:"required"`
+// 	Amount           float64 `json:"amount" validate:"required,gt=0,number"`
+// 	PaymentMethod	string  `json:"payment_method" validate:"required,oneof=credit_card bank_transfer cash"`
+// 	IssuedAt		 string  `json:"issued_at" validate:"required"`
+// 	PaidAt          *string `json:"paid_at" validate:"omitempty"`
+
+// }
 
 type UpdateLaundryRequestPayload struct {
 	Status string `json:"status" validate:"required,oneof=pending canceled completed processed"`
@@ -135,28 +182,29 @@ type UserAddressPayload struct {
 }
 
 type LaundryTypePayload struct {
-	Name          string `json:"name" validate:"required"`
-	Description   string `json:"description" validate:"required"`
+	Name          string  `json:"name" validate:"required"`
+	Description   string  `json:"description" validate:"required"`
 	Price         float64 `json:"price" validate:"required"`
-	EstimatedDays int `json:"estimated_days" validate:"required"`
+	EstimatedDays int     `json:"estimated_days" validate:"required"`
 }
 
 type StatusHistoryResponse struct {
-	ID            string `json:"id"`
+	ID               string `json:"id"`
 	LaundryRequestID string `json:"laundry_request_id"`
-	Status        string `json:"status"`
-	UpdatedAt     string `json:"updated_at"`
-	UpdatedBy     string `json:"updated_by"`
+	Status           string `json:"status"`
+	UpdatedAt        string `json:"updated_at"`
+	UpdatedBy        string `json:"updated_by"`
 }
 
 type LaundryRequestResponse struct {
-	ID            string `json:"id"`
-	Weight        float64 `json:"weight"`
-	LaundryType   string `json:"laundry_type"`
-	Notes         string `json:"notes"`
-	CurrentStatus string `json:"current_status"`
-	CompletionDate string `json:"completion_date"`
-	TotalPrice    float64 `json:"total_price"`
+	ID              string                  `json:"id"`
+	Username        string                  `json:"username"`
+	Weight          float64                 `json:"weight"`
+	LaundryType     string                  `json:"laundry_type"`
+	Notes           string                  `json:"notes"`
+	CurrentStatus   string                  `json:"current_status"`
+	CompletionDate  string                  `json:"completion_date"`
+	TotalPrice      float64                 `json:"total_price"`
 	StatusHistories []StatusHistoryResponse `json:"status_histories" gorm:"foreignKey:LaundryRequestID"`
 }
 
