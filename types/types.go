@@ -60,6 +60,11 @@ type NotificationStore interface {
 	CreateNotification(notification Notification) error
 }
 
+type StatisticStore interface {
+	GetUserStatistics(uId string) (UserStatistics, error)
+	GetUsersList() ([]User, error)
+}
+
 type User struct {
 	ID          string `json:"id"`
 	Username    string `json:"username"`
@@ -138,6 +143,14 @@ type Notification struct {
 	Message          string  `json:"message"`
 	IsRead           bool    `json:"is_read"`
 	CreatedAt        string  `json:"created_at"`
+}
+
+type UserStatistics struct {
+	LaundryRequestsCount int64                    `json:"laundry_requests_count"`
+	TotalWeight          float64                  `json:"total_weight"`
+	TotalPrice           float64                  `json:"total_price"`
+	TotalCompleted       int64                    `json:"total_completed"`
+	LatestRequests       []LaundryRequestResponse `json:"latest_requests"`
 }
 
 type LaundryRequestPayload struct {

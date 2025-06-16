@@ -38,30 +38,34 @@ func (h *Handler) handleSignin(ctx *gin.Context) {
 
 	body := types.SigninPayload{}
 
-	data, err := ctx.GetRawData(); if err != nil {
+	data, err := ctx.GetRawData()
+	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "Admin payload is not valid",
 		})
 		return
 	}
 
-	err = json.Unmarshal(data, &body); if err != nil {
+	err = json.Unmarshal(data, &body)
+	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "Bad request payload",
 		})
 		return
 	}
 
-	err = utils.Validate.Struct(body); if err != nil {
+	err = utils.Validate.Struct(body)
+	if err != nil {
 		errors := err.(validator.ValidationErrors)
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "Validation failed",
-			"errors": errors.Error(),
+			"errors":  errors.Error(),
 		})
 		return
 	}
 
-	admin, err :=h.store.GetAdminByEmail(body.Email); if err != nil {
+	admin, err := h.store.GetAdminByEmail(body.Email)
+	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 			"message": "Admin not found",
 		})
@@ -76,7 +80,8 @@ func (h *Handler) handleSignin(ctx *gin.Context) {
 	}
 
 	secret := []byte(config.Envs.JWTSecret)
-	token, err := auth.GenerateJWT(admin.ID, secret, "admin"); if err != nil {
+	token, err := auth.GenerateJWT(admin.ID, secret, "admin")
+	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": "Failed to generate JWT token",
 		})
@@ -84,8 +89,9 @@ func (h *Handler) handleSignin(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-        "token": token,
-    })
+		"user":  admin,
+		"token": token,
+	})
 }
 
 func (h *Handler) handleSignup(ctx *gin.Context) {
@@ -98,30 +104,33 @@ func (h *Handler) handleSignup(ctx *gin.Context) {
 
 	body := types.AdminRegisterPayload{}
 
-	data, err := ctx.GetRawData(); if err != nil {
+	data, err := ctx.GetRawData()
+	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "Admin payload is not valid",
 		})
 		return
 	}
 
-	err = json.Unmarshal(data, &body); if err != nil {
+	err = json.Unmarshal(data, &body)
+	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "Bad request payload",
 		})
 		return
 	}
 
-	err = utils.Validate.Struct(body); if err != nil {
+	err = utils.Validate.Struct(body)
+	if err != nil {
 		errors := err.(validator.ValidationErrors)
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "Validation failed",
-			"errors": errors.Error(),
+			"errors":  errors.Error(),
 		})
 		return
 	}
 
-	admin, _ := h.store.GetAdminByEmail(body.Email);
+	admin, _ := h.store.GetAdminByEmail(body.Email)
 
 	if admin.ID != "" {
 		ctx.AbortWithStatusJSON(http.StatusConflict, gin.H{
@@ -130,7 +139,8 @@ func (h *Handler) handleSignup(ctx *gin.Context) {
 		return
 	}
 
-	hash, err := auth.HashPassword(body.Password); if err != nil {
+	hash, err := auth.HashPassword(body.Password)
+	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": "Failed to hash password",
 		})
@@ -138,10 +148,10 @@ func (h *Handler) handleSignup(ctx *gin.Context) {
 	}
 
 	err = h.store.CreateAdmin(types.Admin{
-		ID: utils.GenerateUUID(),
-		Username:   body.Username,
-		Email:      body.Email,
-		Password:   hash,
+		ID:        utils.GenerateUUID(),
+		Username:  body.Username,
+		Email:     body.Email,
+		Password:  hash,
 		CreatedAt: time.Now().Format(time.RFC3339),
 	})
 

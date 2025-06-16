@@ -10,6 +10,7 @@ import (
 	"github.com/rayhan889/lumbaumbah-backend/service/invoice"
 	"github.com/rayhan889/lumbaumbah-backend/service/laundry"
 	"github.com/rayhan889/lumbaumbah-backend/service/notification"
+	"github.com/rayhan889/lumbaumbah-backend/service/statistic"
 	"github.com/rayhan889/lumbaumbah-backend/service/user"
 	"gorm.io/gorm"
 )
@@ -62,6 +63,10 @@ func (s *APIServer) Run() error {
 
 	notifStore := notification.NewStore(s.db)
 	notification.RegisterHandlers(notifStore, adminStore)
+
+	statisticStore := statistic.NewStore(s.db)
+	statisticService := statistic.NewHanlder(statisticStore)
+	statisticService.RegisterRoutes(v1)
 
 	return r.Run(s.address)
 }

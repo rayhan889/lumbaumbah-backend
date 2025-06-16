@@ -38,30 +38,34 @@ func (h *Handler) handleSignin(ctx *gin.Context) {
 
 	body := types.SigninPayload{}
 
-	data, err := ctx.GetRawData(); if err != nil || len(data) == 0 {
+	data, err := ctx.GetRawData()
+	if err != nil || len(data) == 0 {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "User payload is not valid",
 		})
 		return
 	}
 
-	err = json.Unmarshal(data, &body); if err != nil {
+	err = json.Unmarshal(data, &body)
+	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "Bad request payload",
 		})
 		return
 	}
 
-	err = utils.Validate.Struct(body); if err != nil {
+	err = utils.Validate.Struct(body)
+	if err != nil {
 		errors := err.(validator.ValidationErrors)
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "Validation failed",
-			"errors": errors.Error(),
+			"errors":  errors.Error(),
 		})
 		return
 	}
 
-	user, err := h.store.GetUserByEmail(body.Email); if err != nil {
+	user, err := h.store.GetUserByEmail(body.Email)
+	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 			"message": "Failed to get user",
 		})
@@ -83,7 +87,8 @@ func (h *Handler) handleSignin(ctx *gin.Context) {
 	}
 
 	secret := []byte(config.Envs.JWTSecret)
-	token, err := auth.GenerateJWT(user.ID, secret, "user"); if err != nil {
+	token, err := auth.GenerateJWT(user.ID, secret, "user")
+	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": "Failed to generate JWT token",
 		})
@@ -91,9 +96,9 @@ func (h *Handler) handleSignin(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"user": user,
+		"user":  user,
 		"token": token,
-    })
+	})
 }
 
 func (h *Handler) handleSignup(ctx *gin.Context) {
@@ -106,30 +111,33 @@ func (h *Handler) handleSignup(ctx *gin.Context) {
 
 	body := types.UserRegisterPayload{}
 
-	data, err := ctx.GetRawData(); if err != nil {
+	data, err := ctx.GetRawData()
+	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "User payload is not valid",
 		})
 		return
 	}
 
-	err = json.Unmarshal(data, &body); if err != nil {
+	err = json.Unmarshal(data, &body)
+	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "Bad request payload",
 		})
 		return
 	}
 
-	err = utils.Validate.Struct(body); if err != nil {
+	err = utils.Validate.Struct(body)
+	if err != nil {
 		errors := err.(validator.ValidationErrors)
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "Validation failed",
-			"errors": errors.Error(),
+			"errors":  errors.Error(),
 		})
 		return
 	}
 
-	user, _ := h.store.GetUserByEmail(body.Email);
+	user, _ := h.store.GetUserByEmail(body.Email)
 
 	if user.ID != "" {
 		ctx.AbortWithStatusJSON(http.StatusConflict, gin.H{
@@ -138,7 +146,8 @@ func (h *Handler) handleSignup(ctx *gin.Context) {
 		return
 	}
 
-	hash, err := auth.HashPassword(body.Password); if err != nil {
+	hash, err := auth.HashPassword(body.Password)
+	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": "Failed to hash password",
 		})
@@ -146,13 +155,13 @@ func (h *Handler) handleSignup(ctx *gin.Context) {
 	}
 
 	err = h.store.CreateUser(types.User{
-		ID: utils.GenerateUUID(),
-		Username:   body.Username,
-		FullName:  body.FullName,
-		Email:      body.Email,
-		Password:   hash,
+		ID:          utils.GenerateUUID(),
+		Username:    body.Username,
+		FullName:    body.FullName,
+		Email:       body.Email,
+		Password:    hash,
 		PhoneNumber: body.PhoneNumber,
-		CreatedAt: time.Now().Format(time.RFC3339),
+		CreatedAt:   time.Now().Format(time.RFC3339),
 	})
 
 	ctx.JSON(http.StatusOK, gin.H{
